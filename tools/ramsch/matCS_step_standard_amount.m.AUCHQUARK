@@ -1,0 +1,296 @@
+% USED THIS TO PROCESS MB13 AND M14, WHICH RELIED ON B104 AND B105
+
+
+
+
+
+
+
+function stamam = matCS_step_standard_amount (step,item);
+
+% function stamam = matCS_step_standard_amount (step,item);
+%
+% Return the standard amounts of item in step, if the step is of type C, F or B. The result takes into account the pipette/bottle dilution as well as the manual_dilution factor. For steps of type "B" (blanks), stamam = 0 is returned. If the step type is not C, F or B, a warning will be issued and the result will be NaN. If the step contains no standard amount for the given item, return NaN.
+%
+% INPUT:
+% step: step struct (see matCS_read_step), or a vector where each element corresponds to one step.
+%
+% OUTPUT:
+% stamam: standard amount
+
+if ( length(step) > 1 )
+    stamam = [];
+    for i = 1:length(step)
+        stamam = [stamam ; matCS_step_standard_amount(step(i),item) ];
+    end
+else
+    stamam = NaN;
+    if ~( strcmp(step.type,"F") || strcmp(step.type,"C")  || strcmp(step.type,"B") )
+        warning (sprintf("matCS_step_standard_amounts: step type is not C, F or B (%s).",matCS_step_identity(step)));
+    else
+	if strcmp(step.type,"B")
+		stamam = 0;
+	else	
+		if isempty (step.standard)
+			warning (sprintf("matCS_step_standard_amounts: step contains no standard amounts (%s).",matCS_step_identity(step)));
+		else
+			items = fieldnames (step.standard);
+
+			% fix / parse "wrong" item names in standard amounts:
+			if ~isempty(j = strmatch("O32",items))
+				items{j} = "O2";
+				step.standard.O16 = step.standard.O32;
+				warning (sprintf("matCS_step_standard_amount: wrong item name (O32) in standard amounts found, assuming O16 instead (step: %s).",matCS_step_identity(step)));
+			end
+			if ~isempty(j = strmatch("O16",items))
+				items{j} = "O2";
+				step.standard.O16 = step.standard.O2;
+				warning (sprintf("matCS_step_standard_amount: wrong item name (O16) in standard amounts found, assuming O2 instead (step: %s).",matCS_step_identity(step)));
+			end
+			if ~isempty(j = strmatch("N28",items))
+				items{j} = "N2";
+				step.standard.N14 = step.standard.N28;
+				warning (sprintf("matCS_step_standard_amount: wrong item name (N28) in standard amounts found, assuming N14 instead (step: %s).",matCS_step_identity(step)));
+			end
+			if ~isempty(j = strmatch("N14",items))
+				items{j} = "N2";
+				step.standard.N14 = step.standard.N2;
+				warning (sprintf("matCS_step_standard_amount: wrong item name (N14) in standard amounts found, assuming N2 instead (step: %s).",matCS_step_identity(step)));
+			end
+			if ~isempty(j = strmatch("SF66",items))
+				items{j} = "SF6";
+				step.standard.SF6 = step.standard.SF66;
+				warning (sprintf("matCS_step_standard_amount: wrong item name (SF66) in standard amounts found, assuming SF6 instead (step: %s).",matCS_step_identity(step)));
+			end
+			u = item;
+			while isempty(str2num(u(end))) % remove non-numeric letters (detector information) from end of item name to get isotope / element / molecule name
+				if length(u) > 1
+					u = u(1:end-1);
+				else
+					u = "";
+				end
+			end
+
+			if length(u) > 1
+				item = u;
+			else
+				error (sprintf("matCS_step_standard_amount: cannot parse item name %s to a meaningful isotope / element / molecule name.",item))
+			end
+
+			if strmatch (item,{"CFC11" "CFC12" "CFC113"})
+    				warning ("matCS_step_standard_amount: standard amounts of CFCs in B104 and B105 may need some tweaking as they don't agree nicely in the calibration curves!!! Check this!!!")
+			end
+
+			i = find(strcmp(upper(items),upper(item)));
+			if isempty(i)
+				warning (sprintf("matCS_step_standard_amounts: step contains no standard amount for item %s (%s)",item,matCS_step_identity(step)));
+
+				if strcmp(upper(item),"O2")
+					if strmatch (step.bottle,{"B104" "104"})
+						warning ("matCS_step_standard_amount: faking O2 standard amounts for B104!");
+						stamam = 3.45;
+						stamam = stamam * matCS_step_dilution (step);
+					end
+				end
+				
+				if strcmp(upper(item),"N2")
+					if strmatch (step.bottle,{"B104" "104"})
+						warning ("matCS_step_standard_amount: faking N2 standard amounts for B104!");
+						stamam = 8.22; % determined by comparison with N2M data from B105 (run MB13)
+						% stamam = 9.064; % determined by comparison with N2M data from B105 (run MB13)
+						stamam = stamam * matCS_step_dilution (step);
+					end
+				end
+
+
+			else % standard amount is available
+				stamam = getfield (step.standard,items{i});
+				stamam = stamam * matCS_step_dilution (step);
+				
+				switch matCS_step_run(step)
+				case "MB13"
+				    scale.B104_HE     = 1.2392 ;  % determined in run MB13 by comparing data from B104 and B105 using HE4F, NE20F (RGA100) and NE20M and NE22M (ANTRAWAGC)
+				    scale.B104_NE     = 1.2392 ;  % determined in run MB13 by comparing data from B104 and B105 using HE4F, NE20F (RGA100) and NE20M and NE22M (ANTRAWAGC)
+				    scale.B104_AR     = 1.3605;  % determined in run MB13 by comparing data from B104 and B105 using AR40M (ANTRAWAGC) 
+				    scale.B104_KR     = 1.087;   % determined in run MB13 by comparing data from B104 and B105 using KR84M and KR86M (ANTRAWAGC)
+				    % scale.B104_N2     = 1.087;   % determined in run MB13 by comparing data from B104 and B105 using N2M (ANTRAWAGC)
+				    scale.B104_N2     = 10.0;   % determined in run MB13 by comparing data from B104 and B105 using N2M (ANTRAWAGC)
+                    scale.B104_SF6    = 2.0;        % determined in run MB13 by comparing data from B104 and B105 using SF6E (ANTRAWAGC)
+                    scale.B104_CFC11  = 3.7; % determined in run MB14 by comparing data from B104 and B106 using CFC11E (ANTRAWAGC) 
+
+				    scale.B105_HE     = 1.0;
+				    scale.B105_NE     = 1.0;
+				    scale.B105_AR     = 1.0;
+				    scale.B105_KR     = 1.0;
+				    scale.B105_N2     = 1.0;
+                    scale.B105_SF6    = 1.0;
+                    scale.B105_CFC11  = 3.68; % determined in run MB14 by comparing data from B105 and B106 using CFC11E (ANTRAWAGC) 
+
+				case "MB14"
+				    scale.B104_HE     = 1.37;  % determined in run MB14 by comparing data from B104 and B105 using HE4F, NE20M and NE22M (ANTRAWAGC) 
+				    scale.B104_NE     = 1.37;  % determined in run MB14 by comparing data from B104 and B105 using HE4F, NE20M and NE22M (ANTRAWAGC) 
+				    scale.B104_AR     = 1.3605;  % 
+				    scale.B104_KR     = 1.07;  % determined in run MB14 by comparing data from B104 and B105 using KR84M (ANTRAWAGC) 
+				    scale.B104_N2     = 1.00;  % determined in run MB14 by comparing data from B104 and B105 using N2M (ANTRAWAGC) 
+                    scale.B104_SF6    = 2.090; % determined in run MB14 by comparing data from B104 and B106 using SF6E (ANTRAWAGC) 
+                    scale.B104_CFC11  = 3.6581; % determined in run MB14 by comparing data from B104 and B106 using CFC11E (ANTRAWAGC) 
+                    scale.B104_CFC11  = 3.7; % determined in run MB14 by comparing data from B104 and B106 using CFC11E (ANTRAWAGC) 
+
+				    scale.B105_HE     = 1.0;
+				    scale.B105_NE     = 1.0;
+				    scale.B105_AR     = 1.3605/1.18; % ratio of previous B104 factors for MB13 and MB14
+				    scale.B105_KR     = 1.03;
+				    % scale.B105_N2     = 1.0;
+				    scale.B105_N2     = 8.22 / 9.064;
+                    scale.B105_SF6    = 1.0;
+                    scale.B105_CFC11  = 3.68; % determined in run MB14 by comparing data from B105 and B106 using CFC11E (ANTRAWAGC) 
+
+				end % SWITCH
+
+                % Adjust B104 standard amounts to match B105 (noble gases, O2 and N2)                
+				if strmatch (step.bottle,{"B104" "104"})
+					if strmatch (item,{"HE4"})
+	    					warning ("matCS_step_standard_amount: tweaking He4 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_HE;
+					end
+					if strmatch (item,{"NE20" "NE22"})
+	    					warning ("matCS_step_standard_amount: tweaking Ne20 or Ne22 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_NE;
+					end
+					if strmatch (item,{"AR40" "AR36"})
+	    					warning ("matCS_step_standard_amount: tweaking Ar40 or Ar36 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_AR;  
+					end
+					if strmatch (item,{"KR84" "KR86"})
+	    					warning ("matCS_step_standard_amount: tweaking Kr84 or Kr86 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_KR;
+					end
+					if strmatch (item,{"N2"})
+					        warning ("matCS_step_standard_amount: tweaking N2 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_N2;
+					end
+					if strmatch (item,{"CFC11"})
+					        warning ("matCS_step_standard_amount: tweaking CFC11 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_CFC11;
+					end
+
+                    % Adjust SF6 standard amounts of B104 to match B106
+					if strmatch (item,{"SF6"})
+	    					warning ("matCS_step_standard_amount: tweaking He4, Ne20 or Ne22 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B104_SF6 ; 
+					end
+				end	% BOTTLE B104
+
+                % Adjust B105 standard amounts to match B104 (noble gases, O2 and N2)
+				if strmatch (step.bottle,{"B105" "105"})
+					if strmatch (item,{"HE4"})
+	    					warning ("matCS_step_standard_amount: tweaking He4 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_HE;
+					end
+					if strmatch (item,{"NE20" "NE22"})
+	    					warning ("matCS_step_standard_amount: tweaking He4, Ne20 or Ne22 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_NE;
+					end
+					if strmatch (item,{"AR40" "AR36"})
+	    					warning ("matCS_step_standard_amount: tweaking Ar40 or Ar36 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_AR;  
+					end
+					if strmatch (item,{"KR84" "KR86"})
+	    					warning ("matCS_step_standard_amount: tweaking Kr84 or Kr86 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_KR;
+					end
+					if strmatch (item,{"N2"})
+							warning ("matCS_step_standard_amount: tweaking N2 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_N2;
+					end
+					if strmatch (item,{"CFC11"})
+					        warning ("matCS_step_standard_amount: tweaking CFC11 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_CFC11;
+					end
+
+                    % Adjust SF6 standard amounts of B104 to match B106
+					if strmatch (item,{"SF6"})
+	    					warning ("matCS_step_standard_amount: tweaking He4, Ne20 or Ne22 standard amount of B104!!! Check this!!!")
+		            		stamam = stamam * scale.B105_SF6 ; 
+					end
+				end	% BOTTLE B105
+
+%%%%				if strmatch (step.bottle,{"B105" "105"})
+%%%%					if strmatch (item,{"CFC11"})
+%%%%	    					%% warning ("matCS_step_standard_amount: tweaking CFC-11 standard amount of B105!!! Check this!!!")
+%%%%		            		%% stamam = stamam * 0.79; % determined in run MB13 by comparing data from B104 and B105 using CFC11E (ANTRAWAGC) 
+%%%%					end
+%%%%					if strmatch (item,{"SF6"})
+%%%%	    					%% warning ("matCS_step_standard_amount: tweaking SF6 standard amount of B105!!! Check this!!!")
+%%%%		            		% stamam = stamam * 0.6; % determined in run MB13 by comparing data from B104 and B105 using SF6E (ANTRAWAGC
+%%%%	    					%% warning ("matCS_step_standard_amount: SF6 standard amount of B105 is unknown!!!")
+%%%%	    					%% stamam = NaN;
+%%%%					end
+%%%%				end % BOTTLE B105
+
+			end
+		end
+	end
+end
+
+
+
+
+% APPLY FUDGE FACTORS TO FIX O2 / N2 AND NOBLE-GAS / N2 RATIOS:				
+if strmatch (item,{"O2"})
+        %% warning ("matCS_step_standard_amount: multiplying Xe standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam * 0.868;
+        stamam = stamam * 0.976; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        
+        
+        
+end
+if strmatch (item,{"HE4"})
+        warning ("matCS_step_standard_amount: multiplying He standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam * 1.198;
+        %% stamam = stamam * 1.1277; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        stamam = stamam * 1.1277 / 1.11; % determined using REPL2 data from ETHZ-NG lab
+end
+if strmatch (item,{"NE20" "NE22"})
+        warning ("matCS_step_standard_amount: multiplying Ne standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam * 1.484;
+        %% stamam = stamam * 1.1565; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        stamam = stamam * 1.1565 / 1.04; % determined using REPL2 data from ETHZ-NG lab
+end
+if strmatch (item,{"AR40" "AR36"})
+        warning ("matCS_step_standard_amount: multiplying Ar standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam / 1.3;
+        %% stamam = stamam * 0.965; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        stamam = stamam * 0.965 / 0.947; % determined using REPL2 data from ETHZ-NG lab
+end
+if strmatch (item,{"KR84" "KR86"})
+        warning ("matCS_step_standard_amount: multiplying Kr standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam * 1.009;
+        %% stamam = stamam * 1.03; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        stamam = stamam * 1.03 / 0.714; % determined using REPL2 data from ETHZ-NG lab
+end
+if strmatch (item,{"XE129" "XE131" "XE132"})
+        warning ("matCS_step_standard_amount: multiplying Xe standard amount with fudge factor... Check this!!!")
+        %% stamam = stamam * 0.868;
+        %% stamam = stamam * 1.018; % determined from air aliquots (AG,20,1000 and AG,20,1001)
+        stamam = stamam * 1.018 / 0.641; % determined using REPL2 data from ETHZ-NG lab
+end
+
+warning ("matCS_step_standard_amount: multiplying standard amount with fudge factor (overall scaling)... Check this!!!")
+stamam = stamam / 1.25;
+
+disp ("\n****************");
+warning ("matCS_step_standard_amount: 0. DONE -- N2 results from B105 and B106 agree reasonably well, so use these N2 values as a reference.")
+warning ("matCS_step_standard_amount: 1. DONE -- Agreement of noble gases in B104 (=Aare degas) and B105 (=air, via Rix compressor) is not terribly bad. Compared to B104, gas in B105 seems to be enriched in large molecules / depleted in small molecules (artefact from Rix compressor used for sampling?). Or is the difference due to leaky valve(s) at pipette at B104 (B104 has lost some gas)?")
+warning ("matCS_step_standard_amount: 2. DONE -- Adjust noble gas standard amounts (+N2, O2) of B104 to match those of B105")
+warning ("matCS_step_standard_amount: 2. DONE -- Adjust SF6 standard amounts of B104 to match those of B106. SF6 std. amounts of B105 seem to agree with B106 without modification, but SF6 analyses of B105 show double peak and are therefore not reliable (run MB14).")
+warning ("matCS_step_standard_amount: 3. TODO -- Apply overall scaling to yield overall gas amounts in water samples REPL3 (and maybe also AG,20,1000 and AG,20,1001, but sample volume is not veeeery well known).")
+warning ("matCS_step_standard_amount: 4. TODO -- Think about how to adjust/fix standard amounts of CFCs. Just believe the standard amounts of B105, because this is the gold standard of Martin Vollmer / EMPA?")
+warning ("matCS_step_standard_amount: *****************")
+warning ("matCS_step_standard_amount: NOTE, NOTE, NOTE: IF AR40M/ANTRAWAGC results in MB14/REPL3 ARE MULTIPLIED BY RATIO OF B104-FUDGEFACTORS (1.3605/1.18=1.153), THE OVERALL NOBLE-GAS PICTURE BECOMES VERY REASONABLE (SLIGHT OVERSATURATION OF LIGHT GASES DUE TO EXCESS AIR IN GRAVEL BED). SO: IT LOOKS LIKE APPLYING THE SCALING FACTORS TO B104 AND LEAVING B105 AS IS NOT THE RIGHT CHOICE. MAYBE RATHER LEAVE B104 AS IS AND ADJUST B105!?")
+
+disp ("****************\n");
+
+
+
+end
