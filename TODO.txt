@@ -1,0 +1,10 @@
+To do:
+   * Add functionality to use 'alias' fastcals from different item for drift calibration (e.g., use AR40F fastcals for CH16F drift calibration).
+   * Improve flexibility of blank treatment:
+      * S - B (subtract individual blank or interpolated bank value
+      * S - mB (subtract mean blank value)
+      * S + B - 2 x mB (add a blank to the sample/slowcal value and then subtract mean blank value, e.g. for cases a sample was not well degassed and the following blank needs to be treated as a second extraction step step)
+
+   * Add / improve direct processing of item ratios (isotope ratios) without falling back to gas amounts of each item (which complicates error treatment and stuff)
+   
+   * Add commands / menus for saving and loading run data files? This would be nice for Matlab/Octave novices.
