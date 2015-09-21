@@ -29,3 +29,7 @@ else
         labcode = '';
     end
 end
+
+if ~iscellstr (labcode) % there was only one step
+	labcode = cellstr (labcode);
+end
