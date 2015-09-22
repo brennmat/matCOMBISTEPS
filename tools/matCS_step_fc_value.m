@@ -57,7 +57,7 @@ fc_val = fc_err = repmat (NA,N,1);
 k = repmat (0,N,1);
 for i = 1:N % build an index (k) to the steps which actually have the given FINAL item
     itms = matCS_step_final_items (step(i));
-    if any(strcmp(itms,item))
+    if any(strcmp(itms,item)) % this step has a FINAL value for the given item / machine
         k(i) = 1;
     end
 end
@@ -77,7 +77,7 @@ for i = 1:M % loop through all steps in k to check if they have explicit fastcal
         if length(x) > 1
             error (sprintf('matCS_step_fc_value: explicit fastcal pairing with more than one fastcal step is not (yet) supported (step: %s)!',matCS_step_identity(step(k(i)))));
         end
-        u = find (stepnumbers == x);        
+        u = find (stepnumbers == x);
         if isempty(u)
             warning (sprintf('matCS_step_fc_value: fastcal pairing of this step (%s) refers to inexistent or disabled fastcal. This may happen if you disabled the fastcal after pairing it with this step. Returning NA...',matCS_step_identity(step(k(i)))))
             fc_val(k(i)) = fc_err(k(i)) = NA;

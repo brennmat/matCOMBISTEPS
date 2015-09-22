@@ -20,6 +20,14 @@ function [s,s_err,t,unit,stepnumbers] = matCS_run_fastcalsignals (run,machine,it
 % unit: unit of signal (string)
 % stepnumbers: fast-cal step numbers
 
+% check for fastcal aliases:
+[A,M,run] = matCS_run_fastcal_alias (run,machine,item); % get alias
+if ~isempty(A) % use alias item / machine instead
+	disp (sprintf('matCS_run_fastcalsignals: using %s @ %s fastcals (alias) to process %s @ %s!',A,M,item,machine))
+	item = A;
+	machine = M;
+end
+
 X = matCS_filtersteps (run.steps,'type','F'); % extract all fastcals
 X = matCS_filtersteps (X,'machine',machine); % extract steps with matching machine
 

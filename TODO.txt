@@ -1,5 +1,5 @@
 To do:
-   * Add functionality to use 'alias' fastcals from different item for drift calibration (e.g., use AR40F fastcals for CH16F drift calibration).
+   * DONE / PREILIMINARY (22.9.2015, MB): Add functionality to use 'alias' fastcals from different item for drift calibration (e.g., use AR40F fastcals for CH16F drift calibration).
    * Improve flexibility of blank treatment:
       * S - B (subtract individual blank or interpolated bank value
       * S - mB (subtract mean blank value)

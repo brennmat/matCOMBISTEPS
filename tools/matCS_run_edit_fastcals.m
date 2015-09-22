@@ -42,6 +42,7 @@ men = sprintf ("%s , '%s'",men,"Plot fastcals vs. time");
 men = sprintf ("%s , '%s'",men,"Plot fastcals vs. step number");
 men = sprintf ("%s , '%s'",men,"Toggle fastcal usage");
 men = sprintf ("%s , '%s'",men,"Modify fastcal pairing");
+men = sprintf ("%s , '%s'",men,"Modify fastcal aliases");
 %%% men = sprintf ("%s , '%s'",men,"Change fastcal pairing"); NO MORE MANUAL PAIRING!
 men = sprintf ("%s );",men);
 while ~quit
@@ -57,6 +58,8 @@ while ~quit
                 run = __matCS_run_edit_fastcal_usage (run,machine,item);
             case 4 % edit fastcal pairing
                 run = __matCS_run_edit_fastcal_pairing (run,machine,item);
+            case 5 % edit fastcal aliases
+                run = __matCS_run_edit_fastcal_aliases (run,machine,item);
             end
 
 end % while
@@ -192,4 +195,49 @@ end % while
 
 % move modified usage flags back to original run data:
 run.steps(i_X) = X; 
+end % function
+
+
+
+function run = __matCS_run_edit_fastcal_aliases (run,machine,item) % edit fast-cal aliasing for given item
+
+[ALI,MACH] = matCS_run_fastcal_alias (run,machine,item); % get alias setting
+
+% show a menu of all items available in fastcal steps:
+[fc,k] = matCS_filtersteps (run.steps,'type','F');
+X = run; X.steps = fc;
+[itm,mach] = matCS_run_items (X);
+
+if (length (itm) == 0)
+    disp ('No fastcal FINAL items available!')
+else
+    title = sprintf ("*** SET FASTCAL ALIAS (%s @ %s) ***",item,machine);
+    quit = 0;
+    while ~quit
+        men = "";
+        for i = 1:length(itm)
+        	if ( strcmp(itm{i},ALI) & strcmp(mach{i},MACH) )
+	            men = sprintf ("%s , '%s @ %s <-- USING THIS AS FC-ALIAS FOR %s @ %s'",men,itm{i},mach{i},item,machine);
+        	elseif ( strcmp(itm{i},item) & strcmp(mach{i},machine) )
+        		if isempty (ALI)
+        			men = sprintf ("%s , '%s @ %s <-- USING THIS (NO ALIAS)'",men,itm{i},mach{i});
+        		else
+		            men = sprintf ("%s , '%s @ %s'",men,itm{i},mach{i});
+				end
+			else
+				men = sprintf ("%s , '%s @ %s'",men,itm{i},mach{i});
+	        end
+        end
+        
+		men = sprintf('k = matCS_menu("%s"%s);',title,men);
+        eval (men);
+        switch k
+            case 0 % exit
+                quit = 1;
+            otherwise % select alias
+            	[ALI,MACH,run] = matCS_run_fastcal_alias (run,machine,item,itm{k},mach{k}); % set alias
+            end
+    end % while
+end % if / else
+
 end % function
