@@ -193,7 +193,7 @@ try
                 if any(findstr(item,'/')) % this seems to be ratio of two items, modify item name accordingly
 	                % item = strrep (item,'/','_'); % replace "/" by "_" in ratios
                 	u = sprintf ('%s_RATIO',strrep(item,'/','_')); % replace "/" by "_" and append "_RATIO" to item name
-                	disp (sprintf('matCS_read_step: found FINAL line that seems to reflec a ratio of two items (%s). Changing item name to %s. THIS IS STILL EXPERIMENTAL!',item,u));
+                	disp (sprintf('matCS_read_step: found FINAL line that seems to reflect a ratio of two items (%s). Changing item name to %s. THIS IS STILL EXPERIMENTAL!',item,u));
                 	item = u;
                 	clear u;
                 end
@@ -202,6 +202,14 @@ try
                 elseif any(findstr(item,"ZEROS"))
                     warning (sprintf("matCS_read_step: ignoring FINAL line with item \"ZEROS\" (file: %s, FINAL line: %s).",file,line));            
                 else
+		    if isempty (val)
+			val = NaN;
+			warning (sprintf("matCS_read_step: FINAL value empty, using NaN (file: %s, FINAL line: %s).",file,item));
+                    end
+                    if isempty (err)
+                        err = NaN;
+			warning (sprintf("matCS_read_step: FINAL error empty, using NaN (file: %s, FINAL line: %s).",file,item));
+                    end
                     eval (sprintf("s.final.%s.val = %g;",item,val));
                     eval (sprintf("s.final.%s.err = %g;",item,err));
                     eval (sprintf("s.final.%s.unit = '%s';",item,unit));
