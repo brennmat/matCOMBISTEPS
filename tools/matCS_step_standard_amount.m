@@ -35,7 +35,7 @@ if ( length(step) > 1 )
 	end
 
 else
-    stamam = NaN;
+    stamam = NaN; unit = '';
     if ~( strcmp(step.type,"F") || strcmp(step.type,"C")  || strcmp(step.type,"B") || strcmp(step.type,"R") )
         warning (sprintf("matCS_step_standard_amounts: step type is not C, F, B, or R (%s).",matCS_step_identity(step)));
     else
@@ -97,7 +97,7 @@ else
 
 			else % standard amount is available
 				xx = getfield (step.standard,items{i});
-				if ~isstruct (xx) % this is an old fashioned data set with out units in the standard amounts
+				if ~isstruct (xx) % this is an old fashioned data set without units in the standard amounts
 					stamam = xx;
 					unit   = '';
 				else % this is a struct with value and unit
