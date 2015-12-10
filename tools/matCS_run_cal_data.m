@@ -61,9 +61,9 @@ else
     for i = 1:length(ss)
 	   step_numbers = [ step_numbers ; ss(i).number ];
     end
-    
+
     [SC_FC_ratio,SC_FC_ratio_err] = matCS_step_final_fc_ratio (run,ss,item); % get SC/FC ratios (this includes dilution correction of FC signals)
-        
+
     [gas_amount,unit]             = matCS_step_standard_amount(ss,item); % this includes the dilution correction of standard amounts
 
     % keep only entries with numerical values in both gas amounts and signals

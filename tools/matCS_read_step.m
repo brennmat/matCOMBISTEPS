@@ -244,6 +244,7 @@ try
                 if findstr (line,'STANDARD')
                     x  = strsplit (line,' ',true);
                     xx = strsplit (ll,' ',true);   % use ll instead of line to get original upper/lower case string
+
                     if isempty(str2num(x{4}))  % replace with "not available" if the standard-amount value is strange (i.e. not numeric)
                         x{4} = 'NA'; 
                     end
@@ -292,9 +293,10 @@ try
                 end
 	    	case "GEM"
 				if findstr(line,'RUEDI TOTALPRESSURE')
-					x = strsplit (line,' ',true);
-					s.RUEDI_TOTALPRESSURE.val = str2num (x{3});
-					s.RUEDI_TOTALPRESSURE.unit = str2num (x{4});
+					x = strsplit (ll,' ',true);
+					s.RUEDI_TOTALPRESSURE.val = str2num (x{4});
+					s.RUEDI_TOTALPRESSURE.unit = x{5};
+
 				elseif findstr(line,'RUEDI')
 					warning (sprintf('matCS_read_step: line with unknown RUEDI key (%s). Ignoring it...',line));
 				end
@@ -394,7 +396,7 @@ catch
 	if ~exist ('lastline','var')
 		lastline = '<NONE>';
 	end
-    warning (sprintf("matCS_read_step: could not load data, skipping this file (%s). lasterr = %s .",file,lasterr))
+	warning (sprintf("matCS_read_step: could not load data, skipping this file (%s). lasterr = %s .",file,lasterr))
     s = [];
 
 end_try_catch
