@@ -24,13 +24,14 @@ if ( length(step) > 1 )
 		unit = '';
 	else % at least some of the steps are not blanks, so they might have units
 		unit = unique (u(k)); % unit(s) used with non-blanks
+		unit = unit(~strcmp(unit,''));
 		if length (unit) > 1    % check if all units in u{i} are the same and put this in 'unit'
 			warning (sprintf('matCS_step_standard_amount: different units used for item %s! You should fix this in your raw data files and re-import the files! Assuming unit = %s...',item,unit{1}));
 		end
 		unit = unit{1};
 	end
 	if strcmp (unit,'');
-		unit = 'ccSTP';
+		unit = 'ccSTP (?)';
 		warning (sprintf('matCS_step_standard_amount: units of standard amounts not known. You should fix this in your raw data files and re-import the files! Assuming unit = ccSTP',item));
 	end
 
