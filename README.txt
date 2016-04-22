@@ -4,6 +4,4 @@ matCOMBISTEPS uses GNU Octave (or Matlab) as a base (these are powerful number c
 
 matCOMBISTEPS is distributed as free software under the GNU General Public License (see LICENSE.txt).
 
-Copyright (C) 2015 Matthias S. Brennwald, Eawag (Swiss Federal Institute of Aquatic Science and Technology)
-
-Contact: matthias.brennwald@eawag.ch
+Copyright (C) 2015 Matthias S. Brennwald (brennmat@gmail.com)
