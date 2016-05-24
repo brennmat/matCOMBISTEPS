@@ -38,7 +38,7 @@ else
         day_pumpout = floor (step.pumpout_time/60/60/24); % end of measurement
         if day_pumpout > day_inlet % measurement was running over midnight
         	time = time - (day_pumpout-day_inlet); % subtract offset
-        	warning (sprintf('matCS_step_inlet_time: measurement was running over midnight (file: %s). The inlet time was adjusted by assuming the date given in the file corresponds to the end of the measurement. Please be careful...',step.file));
+        	% warning (sprintf('matCS_step_inlet_time: measurement was running over midnight (file: %s). The inlet time was adjusted by assuming the date given in the file corresponds to the end of the measurement. Please be careful...',step.file));
         end
         
 	else
