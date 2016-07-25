@@ -94,9 +94,14 @@ INTP = find (INTP); % INTP is now an index to the steps which require interpolat
 if length(INTP) > 0 % if there's anything left for interpolation
     t_step  = matCS_step_inlet_time(step(k(INTP)));
 
-    fc_val(k(INTP))  = interp1 (t,val,t_step);
-    fc_err(k(INTP))  = interp1 (t,err,t_step);
-    
+    if length (t) > 1
+        fc_val(k(INTP))  = interp1 (t,val,t_step);
+        fc_err(k(INTP))  = interp1 (t,err,t_step);
+    else % only one single FC available, cannot interpolate
+        fc_val(k(INTP)) = val;
+	fc_err(k(INTP)) = err;
+    end
+
     u = find (t_step < t(1));
     if ~isempty(u)    
         for i = 1:length(u)

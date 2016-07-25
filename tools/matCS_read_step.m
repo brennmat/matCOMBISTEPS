@@ -346,6 +346,8 @@ try
 				s.RUEDI_TOTALPRESSURE.val = NaN;
 				s.RUEDI_TOTALPRESSURE.unit = '(none)';
 			end
+
+			warning ('matCS_read_step: this is a RUEDI sample, check for measurement data of GE-MIMS total gas pressure! Need to implent this here...')
 	
 		elseif any(strcmp (matCS_step_type(s),{'C' 'F' 'B' 'R'}));
 		
