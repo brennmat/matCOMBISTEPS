@@ -291,7 +291,7 @@ try
                        s.dilution = str2num (x{5});
                    end
                 end
-	    	case "GEM"
+	    	case "GEM" % GE-MIMS TOTAL PRESSURE
 				if findstr(line,'RUEDI TOTALPRESSURE')
 					x = strsplit (ll,' ',true);
 					s.RUEDI_TOTALPRESSURE.val = str2num (x{4});
@@ -344,10 +344,17 @@ try
 			disp (sprintf('matCS_read_step: determined unique sample ID (labcode/sticker) for RUEDI data as: %s',s.sticker{1}))
 			if ~isfield (s,'RUEDI_TOTALPRESSURE')
 				s.RUEDI_TOTALPRESSURE.val = NaN;
+				s.RUEDI_TOTALPRESSURE.err = NaN;
 				s.RUEDI_TOTALPRESSURE.unit = '(none)';
 			end
 
-			warning ('matCS_read_step: this is a RUEDI sample, check for measurement data of GE-MIMS total gas pressure! Need to implent this here...')
+			% Check for measurement data of GE-MIMS total gas pressure:
+			if isfield (s.final,'SAMPLETOTALPRESSURE')
+				s.RUEDI_TOTALPRESSURE.val = s.final.SAMPLETOTALPRESSURE.val;
+				s.RUEDI_TOTALPRESSURE.err = s.final.SAMPLETOTALPRESSURE.err;
+				s.RUEDI_TOTALPRESSURE.unit = s.final.SAMPLETOTALPRESSURE.unit;
+				s.final = rmfield (s.final,'SAMPLETOTALPRESSURE');
+			end
 	
 		elseif any(strcmp (matCS_step_type(s),{'C' 'F' 'B' 'R'}));
 		

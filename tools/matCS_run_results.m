@@ -51,6 +51,7 @@ else
 		            use(k) = ~use(k);
 		    end % switch
 		end % while loop to handle the menu
+
 		% process selection from menu:
 		itm = mach = {};
 		for i = 1:length(items)
@@ -66,14 +67,13 @@ else
 		% throw out unused items / machines:
 		items = itm;
 		machines = mach;
-		
 
+		
 		% Get S/FC ratios for all sample steps and all items
 		disp ('matCS_run_results: determining S/FC ratios. Please wait...'); fflush (stdout);
 		ratios = ratios_err = res = res_err = repmat (NA,length(samples),length(items));
 		for i = 1:length(items) % get S/FC ratios
 		    disp (sprintf('...processing %s (%s)...',items{i},machines{i})); fflush (stdout);
-
 		    [s,m] = matCS_filtersteps (samples,"machine",machines{i}); % all steps measured on the machine of the current item
 		    [ratios(m,i),ratios_err(m,i)] = matCS_step_final_fc_ratio (run,samples(m),items{i}); % get S/FC ratios and errors
 		end;
@@ -85,26 +85,15 @@ else
 		units = {};
 		for i = 1:length(items)
 		    disp (sprintf('...processing %s (%s)...',items{i},machines{i})); fflush (stdout);
-		    
-	%            if strcmp(items{i},'CFC113E')
-	%                keyboard
-	%            end
-	%            
-	%            if strcmp(items{i},'HE4F')
-	%                keyboard
-	%            end
-		    
-		    %%% [res(:,i),res_err(:,i),units{i},dummy,run] = matCS_gasamount (run,machines{i},items{i},ratios(:,i),ratios_err(:,i));
-		    
-
-			[res(:,i),res_err(:,i),units{i}] = matCS_gasamount (run,machines{i},items{i},ratios(:,i),ratios_err(:,i)); 
+		    [res(:,i),res_err(:,i),units{i}] = matCS_gasamount (run,machines{i},items{i},ratios(:,i),ratios_err(:,i)); 
 		end
 		disp ('...done.'); fflush (stdout);
 
 
 		% Combine all steps / gas amounts into a list of unique lab codes
 		labcodes = unique (matCS_step_labcode(samples));
-		X = X_err = repmat (NA,length(labcodes),length(items)); % matrices for the final results (gas amounts and istotope ratios corresponding to the different labcodes)       
+		X = X_err = repmat (NA,length(labcodes),length(items)); % matrices for the final results (gas amounts and istotope ratios corresponding to the different labcodes)
+		PTOT_SAMPLE = repmat (NA,length(labcodes),1); % TOTAL PRESSURE OF SAMPLE GAS (FOR RUEDI MEASUREMENTS)
 		for i = 1:length(labcodes) % process each labcode
 			% build an index (k) to the sample steps with labcode{i}
 			k = [];
@@ -114,15 +103,19 @@ else
 				end
 			end
 
-			% warning ('matCS_run_results: DATA EXPORT IS WHACKY? WHY ARE SOME RESULTS MISSING / NA IN THE OUTPUT FILE? FIX THIS!')
-			% I __think__ I fixed this. The for, while and if/else statements were not balanced in the right place (there was an 'end' missing, and anotherone was where no 'end' should have been).
-
-
-
 			R = R_err = [];
 		    	for j = 1:length(k) % combine results from different steps for labcode{i} (in array R):
 		        	R     = [ R     ; res(k(j),:)     ];
 		        	R_err = [ R_err ; res_err(k(j),:) ];
+				
+				if isfield (samples(k(j)),'RUEDI_TOTALPRESSURE')
+					if strcmp ( toupper(samples(k(j)).RUEDI_TOTALPRESSURE.unit) , 'HPA' )
+						PTOT_SAMPLE(i) = samples(k(j)).RUEDI_TOTALPRESSURE.val;
+					else
+						warning (sprintf('matCS_run_results: unknown unit %s for total gas pressure, ignoring total gas pressure.',samples(k(j)).RUEDI_TOTALPRESSURE.unit))
+					end
+				end
+				
 		    	end % for j = 1:length(k)
 			if size(R,1) > 1 % there is more than one step associated with labcode{i}, so let's check for duplicate values of a given item/machine for labcode{i}:
 			    	na = ~isnan (R); % index to all numeric values in R (i.e. values which are not NA or NaN)
@@ -153,6 +146,37 @@ else
 			X_err(i,:) = R_err(1,:);
 		end % for i = 1:length(labcodes) // process each labcode
 
+
+		% if RUEDI measurement, ask for total-pressure normalization
+		if any(~isnan(PTOT_SAMPLE))
+			ans = [];
+			q = 'Do you want to normalize the sum of the total pressures of';
+			for i = 1:length(items)
+				q = sprintf ('%s %s',q,items{i});
+				if i < length(items)
+					q = sprintf ('%s, ',q);
+				else
+					q = sprintf ('%s? (Y/N)',q);
+				end
+			end
+			while isempty (ans)
+				u = toupper(input (q,'s'));
+				if strcmp(u,'Y')
+					ans = 1;
+				elseif strcmp(u,'N')
+					ans = 0;
+				end
+			end
+			
+			if ans == 1
+				disp ('matCS_run_results: normalizing RUEDI partial pressures (sum = observed total pressure):'); fflush (stdout);
+				for k = 1:length(labcodes)
+					disp (sprintf('   sample %s: observed total gas pressure = %g hPa',labcodes{k},PTOT_SAMPLE(k) )); fflush(stdout);
+					X(k,:) = X(k,:) * PTOT_SAMPLE(k)/sum(X(k,:));
+				end
+			end
+			
+		end
 
 		% Export results to data file:
 		name = [];

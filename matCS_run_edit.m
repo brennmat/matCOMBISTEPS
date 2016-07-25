@@ -79,8 +79,8 @@ while ~quit
             run = matCS_run_results (run);
         case 7 % Export results
             matCS_run_print_summary (run);
-	    case 8 % sort steps
-	        run = matCS_run_sort_steps (run);
+	case 8 % sort steps
+	    run = matCS_run_sort_steps (run);
  %       case 7 % save current state
  %           run = matCS_run_save (run);
  %       case 8 % load run from disk

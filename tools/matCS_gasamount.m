@@ -1,8 +1,9 @@
-function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machine,item,X_FC_ratio,X_FC_ratio_err)
+function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machine,item,X_FC_ratio,X_FC_ratio_err,RUEDI_totalpressurenormalize)
 
-% function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machine,item,X_FC_ratio,X_FC_ratio_err)
+% function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machine,item,X_FC_ratio,X_FC_ratio_err,RUEDI_totalpressurenormalize)
 %
-% Fit a polynomial curve to the SC/FC ratios vs. gas amounts of a given item/machine, and calculate gas amounts S/FC given ratios. This only uses the slow-cal data with usage flag = true.
+% Fit a polynomial curve to the SC/FC ratios vs. gas amounts of a given item/machine, and calculate gas amounts from given S/FC ratios. This only uses the slow-cal data with usage flag = true.
+% For RUEDI type measurements, to sum of the partial pressures can be normalized to the measured total pressure of the sample gas
 
 % INPUT:
 % run: struct containing the data of the run
@@ -10,6 +11,7 @@ function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machin
 % item: item name
 % X_FC_ratio: ratio of X/fast-cal ratio (where X can be the value of a detector reading of anything: sample, blank, cal, whatever)
 % X_FC_ratio_err: error of X_FC_ratio
+% RUEDI_totalpressurenormalize (optional): if not zero, the sample partial pressures are scaled such that their sum corresponds to the observed total gas pressure in the sample (default: RUEDI_totalpressurenormalize = 0 )
 %
 % OUTPUT:
 % gas_amount: gas amount(s) corresponding to X_FC_ratio (scalar or vector)
@@ -17,6 +19,10 @@ function [gas_amount,gas_amount_err,unit,poly,run] = matCS_gasamount (run,machin
 % unit: unit of gas amounts (string)
 % poly: struct with polynomial info (as used for polyval)
 % run: run struct (possibly with newly created 'calpoly_deg.MACHINE.ITEM' fields)
+
+if ~exist('RUEDI_totalpressurenormalize','var')
+	RUEDI_totalpressurenormalize = 0;
+end
 
 if any (findstr(item,'_'))
     warning (sprintf('matCS_gasamount: processing of item ratios (%s) does not yet work. The guru forgot why, but please ask him to fix this anyway.',item))
