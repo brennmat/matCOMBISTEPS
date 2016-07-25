@@ -291,15 +291,17 @@ try
                        s.dilution = str2num (x{5});
                    end
                 end
-	    case "GEM"
-		if findstr(line,'RUEDI TOTALPRESSURE')
-			x = strsplit (ll,' ',true);
-			s.RUEDI_TOTALPRESSURE.val = str2num (x{4});
-			s.RUEDI_TOTALPRESSURE.unit = x{5};
-		elseif findstr(line,'RUEDI')
-			warning (sprintf('matCS_read_step: line with unknown RUEDI key (%s). Ignoring it...',line));
-		end
+	    	case "GEM"
+				if findstr(line,'RUEDI TOTALPRESSURE')
+					x = strsplit (ll,' ',true);
+					s.RUEDI_TOTALPRESSURE.val = str2num (x{4});
+					s.RUEDI_TOTALPRESSURE.unit = x{5};
+
+				elseif findstr(line,'RUEDI')
+					warning (sprintf('matCS_read_step: line with unknown RUEDI key (%s). Ignoring it...',line));
+				end
             end
+    end
     
     disp ('   ...finished.'); fflush (stdout);
     
@@ -332,7 +334,6 @@ try
     % if this is a RUEDI sample file without a proper and unique labcode, use the provided sticker and the time/date of the measurement to make a (hopefully) unique sample identifier    
 	if any (findstr(upper(s.machine),'RUEDI'))
 		disp ('matCS_read_step: this is a RUEDI type data file...');
-
 		if strcmp (matCS_step_type(s),'S');
 			tt           =  datestr(matCS_step_analysis_time(s),'yyyy-mm-dd_HH:MM:SS');
 			if isempty (s.sticker)
@@ -345,13 +346,6 @@ try
 				s.RUEDI_TOTALPRESSURE.val = NaN;
 				s.RUEDI_TOTALPRESSURE.unit = '(none)';
 			end
-
-			warning ('TREAT GEMIMS TOTAL PRESSURE HERE: IF THE PRESSURE IS NOT GIVEN AS A GEMIMS TOTALPRESSURE LINE, IT COULD ALSO BE IN THE FINAL VALUES (FROM DIRECT MEASUREMENTS TAKEN WITH PRESSURE SENSOR)!')
-
-			s.RUEDI_TOTALPRESSURE.val = NaN;
-			s.RUEDI_TOTALPRESSURE.unit = '?';
-
-
 	
 		elseif any(strcmp (matCS_step_type(s),{'C' 'F' 'B' 'R'}));
 		
@@ -406,4 +400,3 @@ catch
     s = [];
 
 end_try_catch
-    
