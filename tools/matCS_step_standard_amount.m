@@ -112,7 +112,7 @@ else
 				if length(step.bottle) >= 3
 				if strcmp(step.bottle(end-2:end),'101')
                     			% stamam = stamam * matCS_B101_STAMAM_SCALING_SCHNIDSI (item); % determined in run SS02
-                    			stamam = stamam * matCS_B101_STAMAM_SCALING_BRENNMAT (item); % determined in run MB15
+                    			% stamam = stamam * matCS_B101_STAMAM_SCALING_BRENNMAT (item); % determined in run MB15
                 		end
 				end
                 
